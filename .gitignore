@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+
+# Poetry
+.virtualenvs/
+
+.vscode/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
