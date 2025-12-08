@@ -1,17 +1,40 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
+
+# Virtual environments
+.venv/
+env/
+.venv*/
+env*/
+
+# Env files
+.env
 *.env
 
-# Poetry
-.virtualenvs/
+# Alembic cache
+alembic/versions/__pycache__/
 
+# Logs
+*.log
+
+# VSCode
 .vscode/
 
 # macOS
 .DS_Store
 
-# Logs
-*.log
+# Byte-compiled / optimized / DLL files
+*.so
+*.dll
+*.dylib
+
+# Testing / coverage
+.coverage
+.pytest_cache/
+htmlcov/
+
+# SQLite DB (if you use SQLite locally)
+*.db

@@ -15,7 +15,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
 
     products: Mapped[List["Product"]] = relationship(back_populates="user", cascade="save-update")
-
+    __forbidden_update_fields__ = {"id", "password_hash", "created_at"}
 class Product(Base):
     __tablename__ = "products"
 
