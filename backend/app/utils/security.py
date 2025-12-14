@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from schemas import TokenData
 from db import sessionDep
-from models import User
+from models.user import User
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")

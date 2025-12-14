@@ -5,7 +5,7 @@ from crud.user_crud import createUser, updateUser
 from db import getSession
 from utils.security import get_current_user
 from typing import Annotated
-from models import User
+from models.user import User
 
 router = APIRouter(prefix="/users", tags=["users"])
 commonSession = Annotated[Session, Depends(getSession)]
