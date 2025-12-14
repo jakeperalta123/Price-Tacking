@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from schemas import UserCreate
 from utils.security import hashPwd
-from models import User
+from models.user import User
 from fastapi import HTTPException
 import os
 from dotenv import load_dotenv
@@ -40,6 +40,7 @@ def updateUser(user_id: int, data: UserUpdate, session: Session):
     session.commit()
     session.refresh(user)
     return user
+
 
 def authenticate_user(session: Session, email: str, password: str):
     user = getUserByEmail(email, session)
