@@ -2,7 +2,6 @@ from sqlalchemy import NUMERIC, String, ForeignKey, TIMESTAMP, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from .base import Base
-from .product import Product
 
 class Price(Base):
     __tablename__ = "prices"

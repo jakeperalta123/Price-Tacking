@@ -1,13 +1,13 @@
 from sqlalchemy.orm import Session
 from schemas import UserCreate
-from utils.security import hashPwd
+from utils.security import hashPwd, verify_password
 from models.user import User
 from fastapi import HTTPException
 import os
 from dotenv import load_dotenv
 from schemas import UserUpdate
 from sqlalchemy import select
-import bcrypt
+from sqlalchemy.exc import IntegrityError
 
 load_dotenv()
 ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
@@ -31,14 +31,29 @@ def updateUser(user_id: int, data: UserUpdate, session: Session):
         raise HTTPException(status_code=404, detail="User not found")
     
     update_data = data.model_dump(exclude_unset=True)
+    if "username" in update_data:
+        existing = session.execute(select(User).where(User.username == update_data["username"])).scalar_one_or_none()
+        if existing and existing.id != user_id:
+            raise HTTPException(status_code=409, detail="User name already in use")
+    if "email" in update_data:
+        existing = session.execute(select(User).where(User.email == update_data["email"])).scalar_one_or_none()
+        if existing and existing.id != user_id:
+            raise HTTPException(status_code=409, detail="Email already in use")
     forbidden_fields = getattr(User, "__forbidden_update_fields__", set())
     update_data = {k: v for k, v in update_data.items() if k not in forbidden_fields}
 
     for field, value in update_data.items():
-        setattr(user, field, value)
-    
-    session.commit()
-    session.refresh(user)
+        if hasattr(user, field):
+            setattr(user, field, value)
+    try: 
+        session.commit()
+        session.refresh(user)
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(status_code=409, detail="Conflict updating user")
+    except Exception:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update user")
     return user
 
 
@@ -47,10 +62,36 @@ def authenticate_user(session: Session, email: str, password: str):
     if not user:
         return None
     try:
-        if not bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8")):
+        if not verify_password(password.encode("utf-8"), user.password_hash.encode("utf-8")):
             return None
     except Exception:
         return None
     return user
     
 
+def change_user_password(user_id: int, current_password: str, new_password: str, session: Session):
+    user = session.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    try:
+        if not verify_password(current_password.encode("utf-8"), user.password_hash.encode("utf-8")):
+            raise HTTPException(status_code=401, detail="Incorrect user password")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Incorrect current password")
+    
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password too weak")
+    
+    user.password_hash = hashPwd(new_password)
+
+    try:
+        session.commit()
+        session.refresh(user)
+    except Exception:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update password")
+    
+    return
+
+
+    

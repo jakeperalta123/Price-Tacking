@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from schemas import TokenData
 from db import sessionDep
-from models.user import User
+from models.user import User, UserStatus
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -57,4 +57,9 @@ async def get_current_user(session: sessionDep, token: Annotated[str, Depends(oa
     user = get_user(session, user_id=token_data.userid)
     if user is None:
         raise credentials_exception
+    if getattr(user, "status", None) != UserStatus.ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="User account is not active"
+        )
     return user
