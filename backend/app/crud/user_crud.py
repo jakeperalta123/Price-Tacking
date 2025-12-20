@@ -1,19 +1,21 @@
 from sqlalchemy.orm import Session
 from schemas import UserCreate
 from utils.security import hashPwd, verify_password
-from models.user import User
+from models.user import User, UserStatus
 from fastapi import HTTPException
 import os
 from dotenv import load_dotenv
 from schemas import UserUpdate
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+import logging
 
 load_dotenv()
 ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+logger = logging.getLogger(__name__)
 
 def createUser(user: UserCreate, session: Session):
-    existing_user = getUserByEmail(user.email, session)
+    existing_user = getUserAnyStatusByEmail(user.email, session)
     if existing_user:
         raise HTTPException(status_code=409, detail="User already exists")
     db_user = User(email=user.email, username=user.username, password_hash=hashPwd(user.password))
@@ -21,22 +23,34 @@ def createUser(user: UserCreate, session: Session):
     session.commit()
     session.refresh(db_user)
     return user
-
-def getUserByEmail(email, session: Session):
+def getUserAnyStatusByEmail(email: str, session: Session):
     return session.execute(select(User).where(User.email == email)).scalar_one_or_none()
+def getActiveUserByEmail(email: str, session: Session):
+    return session.execute(select(User).where(User.email == email, User.status == UserStatus.ACTIVE)).scalar_one_or_none()
+def getActiveUserById(user_id: int, session: Session):
+    return session.execute(select(User).where(User.id == user_id, User.status == UserStatus.ACTIVE)).scalar_one_or_none()
+
+def getUserAnyStatusById(user_id: int, session: Session):
+    return session.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+
+def getActiveUserByName(username: str, session: Session):
+    return session.execute(select(User).where(User.username == username, User.status == UserStatus.ACTIVE)).scalar_one_or_none()
+
+def getUserAnyStatusByName(username: str, session: Session):
+    return session.execute(select(User).where(User.username == username)).scalar_one_or_none()
 
 def updateUser(user_id: int, data: UserUpdate, session: Session):
-    user = session.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+    user = getActiveUserById(user_id, session)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
     update_data = data.model_dump(exclude_unset=True)
     if "username" in update_data:
-        existing = session.execute(select(User).where(User.username == update_data["username"])).scalar_one_or_none()
+        existing = getUserAnyStatusByName(update_data["username"], session)
         if existing and existing.id != user_id:
             raise HTTPException(status_code=409, detail="User name already in use")
     if "email" in update_data:
-        existing = session.execute(select(User).where(User.email == update_data["email"])).scalar_one_or_none()
+        existing = getUserAnyStatusByEmail(update_data["email"], session)
         if existing and existing.id != user_id:
             raise HTTPException(status_code=409, detail="Email already in use")
     forbidden_fields = getattr(User, "__forbidden_update_fields__", set())
@@ -58,19 +72,25 @@ def updateUser(user_id: int, data: UserUpdate, session: Session):
 
 
 def authenticate_user(session: Session, email: str, password: str):
-    user = getUserByEmail(email, session)
+    user = getUserAnyStatusByEmail(email, session)
     if not user:
+        logger.info(f"Log in attempt failed: user not found, email={email}")
+        return None
+    if user.status != UserStatus.ACTIVE:
+        logger.info(f"Login attempt for non-active user: email={email}, status={user.status}")
         return None
     try:
         if not verify_password(password.encode("utf-8"), user.password_hash.encode("utf-8")):
+            logger.info(f"Login attempt failed: incorrect password, email={email}")
             return None
     except Exception:
+        logger.exception(f"Error verifying password for email={email}")
         return None
     return user
     
 
 def change_user_password(user_id: int, current_password: str, new_password: str, session: Session):
-    user = session.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+    user = getActiveUserById(user_id, session)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     try:
