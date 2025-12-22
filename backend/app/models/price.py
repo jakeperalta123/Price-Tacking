@@ -11,5 +11,5 @@ class Price(Base):
     price: Mapped[float] = mapped_column(NUMERIC(10,2), nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="USD")
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
-
+    last_update: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
     product: Mapped["Product"] = relationship(back_populates="prices")
