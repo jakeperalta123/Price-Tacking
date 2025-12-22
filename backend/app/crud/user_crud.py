@@ -1,14 +1,15 @@
 from sqlalchemy.orm import Session
-from schemas import UserCreate
+from schemas.users import UserCreate
 from utils.security import hashPwd, verify_password
 from models.user import User, UserStatus
 from fastapi import HTTPException
 import os
 from dotenv import load_dotenv
-from schemas import UserUpdate
+from schemas.users import UserUpdate
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 import logging
+from utils.db import safe_commit
 
 load_dotenv()
 ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
@@ -60,8 +61,7 @@ def updateUser(user_id: int, data: UserUpdate, session: Session):
         if hasattr(user, field):
             setattr(user, field, value)
     try: 
-        session.commit()
-        session.refresh(user)
+        safe_commit(session)
     except IntegrityError:
         session.rollback()
         raise HTTPException(status_code=409, detail="Conflict updating user")
@@ -80,7 +80,7 @@ def authenticate_user(session: Session, email: str, password: str):
         logger.info(f"Login attempt for non-active user: email={email}, status={user.status}")
         return None
     try:
-        if not verify_password(password.encode("utf-8"), user.password_hash.encode("utf-8")):
+        if not verify_password(password, user.password_hash):
             logger.info(f"Login attempt failed: incorrect password, email={email}")
             return None
     except Exception:
@@ -94,7 +94,7 @@ def change_user_password(user_id: int, current_password: str, new_password: str,
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     try:
-        if not verify_password(current_password.encode("utf-8"), user.password_hash.encode("utf-8")):
+        if not verify_password(current_password, user.password_hash):
             raise HTTPException(status_code=401, detail="Incorrect user password")
     except Exception:
         raise HTTPException(status_code=401, detail="Incorrect current password")

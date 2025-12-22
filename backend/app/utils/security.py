@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from schemas import TokenData
+from schemas.tokens import TokenData
 from db import sessionDep
 from models.user import User, UserStatus
 

@@ -6,7 +6,7 @@ from utils.security import create_access_token
 from db import getSession
 from datetime import timedelta
 from typing import Annotated
-from schemas import Token
+from schemas.tokens import Token
 from dotenv import load_dotenv
 import os
 from models.user import UserStatus
