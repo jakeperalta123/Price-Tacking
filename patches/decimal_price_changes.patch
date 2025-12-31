@@ -1,0 +1,13 @@
+*** Begin Patch
+*** Update File: backend/app/models/price.py
+@@
+-from sqlalchemy import NUMERIC, String, ForeignKey, TIMESTAMP, func
++from sqlalchemy import Numeric, String, ForeignKey, TIMESTAMP, func
++from decimal import Decimal
+@@
+-class Price(Base):
++class Price(Base):
+@@
+-    price: Mapped[float] = mapped_column(NUMERIC(10,2), nullable=False)
++    price: Mapped[Decimal] = mapped_column(Numeric(10,2, asdecimal=True), nullable=False)
+*** End Patch

@@ -1,0 +1,143 @@
+*** Begin Patch
+*** Update File: backend/app/models/price.py
+@@
+-from sqlalchemy import NUMERIC, String, ForeignKey, TIMESTAMP, func
+-from sqlalchemy.orm import Mapped, mapped_column, relationship
+-from datetime import datetime
+-from .base import Base
++from sqlalchemy import Numeric, String, ForeignKey, TIMESTAMP, func
++from sqlalchemy.orm import Mapped, mapped_column, relationship
++from datetime import datetime
++from decimal import Decimal
++from .base import Base
+@@
+-class Price(Base):
++class Price(Base):
+@@
+-    price: Mapped[float] = mapped_column(NUMERIC(10,2), nullable=False)
++    price: Mapped[Decimal] = mapped_column(Numeric(10,2, asdecimal=True), nullable=False)
+*** End Patch
+*** Begin Patch
+*** Update File: backend/app/crud/price_crud.py
+@@
+-from datetime import datetime, timezone, date
+-from sqlalchemy import select, update, func
+-from models.price import Price
+-from sqlalchemy.orm import Session
+-from utils.db import safe_commit
+-from models.price import PriceStatus
++from datetime import datetime, timezone, date
++from sqlalchemy import select, update, func
++from decimal import Decimal
++from models.price import Price
++from sqlalchemy.orm import Session
++from utils.db import safe_commit
++from models.price import PriceStatus
+@@
+-def create_price(product_id: int, price_value: float, session: Session):
+-    price = Price(product_id = product_id, price = price_value)
+-    session.add(price)
+-    return price
++def create_price(product_id: int, price_value: Decimal, session: Session):
++    price = Price(product_id = product_id, price = price_value)
++    session.add(price)
++    return price
+@@
+-def update_price(price: Price, new_price: float, session: Session):
+-    corrected = Price(
+-        product_id=price.product_id, 
+-        price=new_price, 
+-        is_correction=True, 
+-        corrected_price_id=price.id
+-    )
+-    session.add(corrected)
+-    return corrected
++def update_price(price: Price, new_price: Decimal, session: Session):
++    corrected = Price(
++        product_id=price.product_id, 
++        price=new_price, 
++        is_correction=True, 
++        corrected_price_id=price.id
++    )
++    session.add(corrected)
++    return corrected
+*** End Patch
+*** Begin Patch
+*** Update File: backend/app/schemas/products.py
+@@
+-from pydantic import BaseModel
+-from typing import Optional
+-from decimal import Decimal
+-
+-class ProductCreate(BaseModel):
+-    name: str
+-    unit: str
+-    price: Decimal
+-    store: Optional[str] = None
+-    category: Optional[str] = None
+-    class Config:
+-        extra = "forbid"
+-
+-class ProductUpdate(BaseModel):
+-    name: Optional[str] = None
+-    unit: Optional[str] = None
+-    price: Optional[Decimal] = None
+-    store: Optional[str] = None
+-
+-    class Config:
+-        extra = "forbid"
++from pydantic import BaseModel
++from typing import Optional
++from decimal import Decimal
++
++class ProductCreate(BaseModel):
++    name: str
++    unit: str
++    price: Decimal
++    store: Optional[str] = None
++    category: Optional[str] = None
++    class Config:
++        extra = "forbid"
++        json_encoders = {Decimal: lambda v: str(v)}
++
++class ProductUpdate(BaseModel):
++    name: Optional[str] = None
++    unit: Optional[str] = None
++    price: Optional[Decimal] = None
++    store: Optional[str] = None
++
++    class Config:
++        extra = "forbid"
++        json_encoders = {Decimal: lambda v: str(v)}
+*** End Patch
+*** Begin Patch
+*** Update File: backend/app/routers/product_router.py
+@@
+-from fastapi import APIRouter, Depends
+-from sqlalchemy.orm import Session
+-from db import getSession
+-from typing import Annotated
+-from services.product_service import upsert_today_price
+-from schemas.products import ProductCreate
+-from utils.security import get_current_user
+-from models.user import User
++from fastapi import APIRouter, Depends
++from sqlalchemy.orm import Session
++from db import getSession
++from typing import Annotated
++from services.product_service import upsert_today_price
++from schemas.products import ProductCreate
++from utils.security import get_current_user
++from models.user import User
++from decimal import Decimal
++from fastapi.encoders import jsonable_encoder
+@@
+ def create_or_update_price(
+     product: ProductCreate, 
+     session: common_session, 
+     current_user: Annotated[User, Depends(get_current_user)]
+     ):
+     result = upsert_today_price(current_user.id, product, session)
+-    return result
++    return jsonable_encoder(result, custom_encoder={Decimal: str})
+*** End Patch

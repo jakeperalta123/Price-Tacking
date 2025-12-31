@@ -1,15 +1,14 @@
 from sqlalchemy.orm import Session
-from schemas.users import UserCreate
-from utils.security import hashPwd, verify_password
-from models.user import User, UserStatus
+from app.schemas.users import UserCreate
+from app.utils.security import hashPwd, verify_password
+from app.models.user import User, UserStatus
 from fastapi import HTTPException
 import os
 from dotenv import load_dotenv
-from schemas.users import UserUpdate
+from app.schemas.users import UserUpdate
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 import logging
-from utils.db import safe_commit
 
 load_dotenv()
 ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
@@ -21,9 +20,7 @@ def createUser(user: UserCreate, session: Session):
         raise HTTPException(status_code=409, detail="User already exists")
     db_user = User(email=user.email, username=user.username, password_hash=hashPwd(user.password))
     session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
-    return user
+    return db_user
 def getUserAnyStatusByEmail(email: str, session: Session):
     return session.execute(select(User).where(User.email == email)).scalar_one_or_none()
 def getActiveUserByEmail(email: str, session: Session):
@@ -60,14 +57,7 @@ def updateUser(user_id: int, data: UserUpdate, session: Session):
     for field, value in update_data.items():
         if hasattr(user, field):
             setattr(user, field, value)
-    try: 
-        safe_commit(session)
-    except IntegrityError:
-        session.rollback()
-        raise HTTPException(status_code=409, detail="Conflict updating user")
-    except Exception:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to update user")
+    
     return user
 
 
@@ -104,14 +94,7 @@ def change_user_password(user_id: int, current_password: str, new_password: str,
     
     user.password_hash = hashPwd(new_password)
 
-    try:
-        session.commit()
-        session.refresh(user)
-    except Exception:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to update password")
-    
-    return
+    return user
 
 
     

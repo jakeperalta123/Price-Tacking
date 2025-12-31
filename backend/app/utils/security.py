@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from schemas.tokens import TokenData
-from db import sessionDep
-from models.user import User, UserStatus
+from app.schemas.tokens import TokenData
+from app.db import sessionDep
+from app.models.user import User, UserStatus
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")

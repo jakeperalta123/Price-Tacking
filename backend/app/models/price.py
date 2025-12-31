@@ -1,15 +1,24 @@
-from sqlalchemy import NUMERIC, String, ForeignKey, TIMESTAMP, func
+from sqlalchemy import Numeric, String, ForeignKey, TIMESTAMP, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
-from .base import Base
+from app.models.base import Base
+from decimal import Decimal
 
+class PriceStatus:
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+    DELETED = "deleted"
+    ALL = {ACTIVE, ARCHIVED, DELETED}
 class Price(Base):
     __tablename__ = "prices"
 
     id: Mapped[int]  = mapped_column(primary_key=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
-    price: Mapped[float] = mapped_column(NUMERIC(10,2), nullable=False)
+    price: Mapped[Decimal] = mapped_column(Numeric(10,2, asdecimal=True), nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="USD")
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
     last_update: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
+    is_correction: Mapped[bool] = mapped_column(default=False)
+    corrected_price_id: Mapped[int] = mapped_column(ForeignKey("prices.id"), nullable=True)
     product: Mapped["Product"] = relationship(back_populates="prices")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="active")

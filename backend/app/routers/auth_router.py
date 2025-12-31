@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from crud.user_crud import authenticate_user
-from utils.security import create_access_token
-from db import getSession
+from app.crud.user_crud import authenticate_user
+from app.utils.security import create_access_token
+from app.db import getSession
 from datetime import timedelta
 from typing import Annotated
-from schemas.tokens import Token
+from app.schemas.tokens import Token
 from dotenv import load_dotenv
 import os
-from models.user import UserStatus
+from app.models.user import UserStatus
 
 load_dotenv()
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
