@@ -12,6 +12,7 @@ env*/
 
 # Env files
 .env
+.env.local
 *.env
 
 # Alembic cache
@@ -38,3 +39,15 @@ htmlcov/
 
 # SQLite DB (if you use SQLite locally)
 *.db
+
+# Node dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.vite/
+
+# macOS
+.DS_Store
+public/.DS_Store
