@@ -26,3 +26,10 @@ async def update_user(user_update: UserUpdate, current_user: auth_dependency, se
 async def change_password(payload: PasswordUpdate, current_user: auth_dependency, session: common_session):
     change_user_password_service(current_user.id, payload.current_password, payload.new_password, session)
     return
+
+@router.get("/me")
+async def get_my_info(current_user: auth_dependency):
+    return {
+        "username": current_user.username, 
+        "email": current_user.email
+    }
