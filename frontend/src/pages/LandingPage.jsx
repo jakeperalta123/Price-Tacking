@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, User, Mail, Lock, LogOut, Settings} from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, Mail, Lock, LogOut, PlusCircle, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ProductManager from './ProductManager'; 
 
 const LandingPage = () => {
     const navigate = useNavigate();
-    const [currentIndex, setCurrentIndex] = useState(0)
+    const [currentIndex, setCurrentIndex] = useState(0);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    
+    const [activeModal, setActiveModal] = useState(null); 
+    const [priceTab, setPriceTab] = useState('create'); 
 
     useEffect(() => {
         const token = localStorage.getItem('access_token');
-        // true if token exists, false otherwise
         setIsLoggedIn(!!token);
     }, []);
 
@@ -21,7 +24,7 @@ const LandingPage = () => {
     ];
 
     const nextSlide = () => setCurrentIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-    const prevSlide = () => setCurrentIndex((prev) => (prev == 0 ? slides.length - 1 : prev - 1));
+    const prevSlide = () => setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
 
     const handleLogout = () => {
         localStorage.removeItem('access_token');
@@ -43,6 +46,26 @@ const LandingPage = () => {
                 <div className="text-white text-2xl font-black tracking-tighter cursor-pointer" onClick={() => navigate('/')}>
                     CREATED BY <span className="font-light">JAKE</span>
                 </div>
+
+                <div className="hidden md:flex items-center gap-1">
+                    {isLoggedIn && (
+                        <>
+                            <button 
+                                onClick={() => { setActiveModal('price'); setPriceTab('create'); }}
+                                className="text-white text-[11px] font-black uppercase tracking-[0.2em] px-6 py-2 hover:bg-white/10 rounded-lg transition-all"
+                            >
+                                Create Price
+                            </button>
+                            <button 
+                                onClick={() => { setActiveModal('price'); setPriceTab('check'); }}
+                                className="text-white text-[11px] font-black uppercase tracking-[0.2em] px-6 py-2 hover:bg-white/10 rounded-lg transition-all"
+                            >
+                                Check Price
+                            </button>
+                        </>
+                    )}
+                </div>
+
                 <div className="relative">
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -76,7 +99,18 @@ const LandingPage = () => {
                     )}
                 </div>
             </nav>
-            <div className="relative h-full flex flex-col items-center justify-start pt-32 text-white z-10 text-center">
+
+            {activeModal === 'price' && (
+                <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="absolute inset-0" onClick={() => setActiveModal(null)}/>
+                    <ProductManager 
+                        initialTab={priceTab} 
+                        onClose={() => setActiveModal(null)} 
+                    />
+                </div>
+            )}
+
+            <div className="relative h-full flex flex-col items-center justify-start pt-32 text-white z-10 text-center pointer-events-none">
                 <h1 className="text-5xl font-bold mb-2 animate-in fade-in slide-in-from-top-4 duration-700">
                     {slides[currentIndex].title}
                 </h1>
@@ -84,12 +118,14 @@ const LandingPage = () => {
                     {slides[currentIndex].sub}
                 </p>    
             </div>
+
             <button onClick={prevSlide} className="absolute left-6 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white transition-all z-20">
                 <ChevronLeft size={48} />
             </button>
             <button onClick={nextSlide} className="absolute right-6 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white transition-all z-20">
                 <ChevronRight size={48} />
             </button>
+
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3">
                 {slides.map((_, i) => (
                     <div 

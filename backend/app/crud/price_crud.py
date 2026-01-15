@@ -48,4 +48,4 @@ def get_recent_average_and_latest_price(product_id: int, session: Session):
     average_price = total / Decimal(len(recent_prices))
     latest_price = recent_prices[0].price
 
-    return {"average price": average_price, "latest price": latest_price}
+    return {"average_price": average_price, "latest_price": latest_price}
