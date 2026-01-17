@@ -13,6 +13,19 @@ def get_today_active_price(product_id: int, start: datetime, end: datetime,  ses
         .where(Price.status == PriceStatus.ACTIVE)
     ).scalar_one_or_none()
 
+def get_product_latest_ten_price(session: Session, product_id: int, limit: int = 10):
+    query = (
+        select(Price)
+        .where(Price.product_id == product_id)
+        .where(Price.status == PriceStatus.ACTIVE)
+        .order_by(Price.created_at.desc())
+        .limit(limit)
+    )
+
+    result = session.execute(query).scalars().all()
+
+    return result[::-1]
+
 def create_price(product_id: int, price_value: Decimal, session: Session):
     price = Price(product_id = product_id, price = price_value)
     session.add(price)
@@ -32,6 +45,7 @@ def deactivate_price(price: Price):
     price.status = PriceStatus.ARCHIVED
 
 def get_recent_average_and_latest_price(product_id: int, session: Session):
+
     
     recent_prices = session.execute(
         select(Price)

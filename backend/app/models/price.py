@@ -13,10 +13,10 @@ class Price(Base):
     __tablename__ = "prices"
 
     id: Mapped[int]  = mapped_column(primary_key=True)
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False, index=True)
     price: Mapped[Decimal] = mapped_column(Numeric(10,2, asdecimal=True), nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="USD")
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now(), index=True)
     last_update: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
     is_correction: Mapped[bool] = mapped_column(default=False)
     corrected_price_id: Mapped[int] = mapped_column(ForeignKey("prices.id"), nullable=True)
