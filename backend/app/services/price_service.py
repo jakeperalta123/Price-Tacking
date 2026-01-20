@@ -10,7 +10,8 @@ def get_latest_four_average_and_latest_price(user_id: int, session: Session, pro
     result = []
     for product in products:
         price_summary = get_recent_average_and_latest_price(product.id, session)
-        result.append({"product_name": product.name, **price_summary})
+        result.append({"product_id": product.id, 
+                       "product_name": product.name, **price_summary})
     return result
 
 def get_latest_ten_prices_by_product_id(user_id: int, product_id: int, session: Session):
