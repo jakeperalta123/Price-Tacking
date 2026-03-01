@@ -7,6 +7,7 @@ from app.services.price_service import get_latest_four_average_and_latest_price,
 from typing import Annotated, List
 from fastapi.encoders import jsonable_encoder
 from app.schemas.price import PriceHistoryResponse
+from app.core.redis import redis_client
 
 router = APIRouter(prefix="/prices", tags=["prices"])
 
@@ -17,7 +18,16 @@ async def get_latest_summary(
     product_id: int | None = None
     ):
 
+    cache_key = f"user:{current_user.id}:summary"
+    cached_data = await redis_client.get_cache(cache_key)
+
+    if cached_data:
+        print(f"cache hit! returning data for key: {cache_key}")
+        return cached_data
+    print(f"cache miss...")
+
     result = get_latest_four_average_and_latest_price(current_user.id, session, product_id)
+    await redis_client.set_cache(cache_key, result, expire=3600)
     return jsonable_encoder(result)
 
 @router.get("/history/{product_id}", response_model=List[PriceHistoryResponse])
