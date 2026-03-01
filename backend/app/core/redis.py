@@ -13,7 +13,7 @@ class RedisCache:
         self.redis = None
     
     async def connect(self):
-        self.redis = await redis.from_url("redis://localhost:6379", decode_response=True)
+        self.redis = await redis.from_url("redis://localhost:6379", decode_responses=True)
 
     async def get_cache(self, key: str):
         data = await self.redis.get(key)
