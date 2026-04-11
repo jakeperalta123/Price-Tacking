@@ -24,5 +24,11 @@ class RedisCache:
 
     async def delete_cache(self, key: str):
         await self.redis.delete(key)
+    
+    async def incr(self, key: str):
+        return await self.redis.incr(key)
+
+    async def delete(self, key: str):
+        await self.redis.delete(key)
 
 redis_client = RedisCache()

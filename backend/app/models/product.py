@@ -21,3 +21,4 @@ class Product(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="active")
     user: Mapped["User"] = relationship(back_populates="products")
     prices: Mapped[List["Price"]] = relationship(back_populates="product", cascade="all, delete-orphan")
+    is_monitored: Mapped[bool] = mapped_column(default=False, server_default="false")

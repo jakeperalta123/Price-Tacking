@@ -22,3 +22,4 @@ class Price(Base):
     corrected_price_id: Mapped[int] = mapped_column(ForeignKey("prices.id"), nullable=True)
     product: Mapped["Product"] = relationship(back_populates="prices")
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="active")
+    source: Mapped[str] = mapped_column(String(20), nullable=False, server_default="user", default="user")
