@@ -27,7 +27,7 @@ def get_product_latest_ten_price(session: Session, product_id: int, limit: int =
     return result[::-1]
 
 def create_price(product_id: int, price_value: Decimal, session: Session):
-    price = Price(product_id = product_id, price = price_value)
+    price = Price(product_id = product_id, price = price_value, source="user")
     session.add(price)
     return price
 
