@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine, Column, Integer, String, select
-from sqlalchemy.orm import Session, declarative_base, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 import os
 from dotenv import load_dotenv
 from typing import Annotated
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends
 
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL") 

@@ -3,8 +3,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import List, Optional
 from app.models.base import Base
-
+from sqlalchemy.sql import expression
 class ProductStatus:
+
     ACTIVE = "active"
     ARCHIVED = "archived"
     DELETED = "deleted"
@@ -21,4 +22,9 @@ class Product(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="active")
     user: Mapped["User"] = relationship(back_populates="products")
     prices: Mapped[List["Price"]] = relationship(back_populates="product", cascade="all, delete-orphan")
-    is_monitored: Mapped[bool] = mapped_column(default=False, server_default="false")
+    is_monitored: Mapped[bool] = mapped_column(default=False, server_default=expression.false())
+    version: Mapped[int] = mapped_column(nullable=False, default=1)
+    __mapper_args__ = {
+        "version_id_col": version
+    }
+    
