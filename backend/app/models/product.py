@@ -1,4 +1,4 @@
-from sqlalchemy import String, ForeignKey, TIMESTAMP, func
+from sqlalchemy import String, ForeignKey, TIMESTAMP, func, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import List, Optional
@@ -27,4 +27,7 @@ class Product(Base):
     __mapper_args__ = {
         "version_id_col": version
     }
+    __table_args__ = (
+        Index('idx_user_product_name', 'user_id', 'name'),
+    )
     

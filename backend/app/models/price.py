@@ -1,4 +1,4 @@
-from sqlalchemy import Numeric, String, ForeignKey, TIMESTAMP, func
+from sqlalchemy import Numeric, String, ForeignKey, TIMESTAMP, func, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from app.models.base import Base
@@ -23,3 +23,6 @@ class Price(Base):
     product: Mapped["Product"] = relationship(back_populates="prices")
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="active")
     source: Mapped[str] = mapped_column(String(20), nullable=False, server_default="user", default="user")
+    __table_args__ = (
+        Index('idx_product_status_created', 'product_id', 'status', 'created_at'), 
+    )
