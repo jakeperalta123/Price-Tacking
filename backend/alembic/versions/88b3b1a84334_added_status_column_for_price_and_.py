@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.add_column('prices', sa.Column('is_correction', sa.Boolean(), nullable=False))
     op.add_column('prices', sa.Column('corrected_price_id', sa.Integer(), nullable=True))
     op.add_column('prices', sa.Column('status', sa.String(length=20), server_default='active', nullable=False))
-    op.drop_index(op.f('idx_prices_product_time'), table_name='prices')
+    op.execute('DROP INDEX IF EXISTS idx_prices_product_time')
     op.create_foreign_key(None, 'prices', 'prices', ['corrected_price_id'], ['id'])
     op.add_column('products', sa.Column('status', sa.String(length=20), server_default='active', nullable=False))
     # ### end Alembic commands ###

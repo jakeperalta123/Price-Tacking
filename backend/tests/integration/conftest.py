@@ -1,8 +1,18 @@
 import pytest
 from httpx import AsyncClient
 import httpx
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine.url import make_url
 from sqlalchemy.orm import sessionmaker
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")  # Use PostgreSQL for integration tests
+if not TEST_DATABASE_URL:
+    raise RuntimeError("TEST_DATABASE_URL environment variable is not set")
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+
 from app.main import app
 from app.models.base import Base
 from app.models.user import User
@@ -11,9 +21,19 @@ from app.utils.security import get_current_user
 from app.db import getSession
 import fakeredis.aioredis as fakeredis
 from app.api.deps import get_redis
-from app.utils.mysql_db import SessionLocal as MySQLSessionLocal
 
-TEST_DATABASE_URL = "sqlite:///./test.db"
+def ensure_database_exists(database_url: str) -> None:
+    url = make_url(database_url)
+    db_name = url.database
+    maintenance_url = url.set(database="postgres")
+    engine = create_engine(maintenance_url, isolation_level="AUTOCOMMIT")
+    with engine.connect() as conn:
+        exists = conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :name"),
+            {"name": db_name},
+        ).scalar()
+        if not exists:
+            conn.execute(text(f'CREATE DATABASE "{db_name}"'))
 
 @pytest.fixture
 def test_app():
@@ -21,6 +41,7 @@ def test_app():
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
+    ensure_database_exists(TEST_DATABASE_URL)
     engine = create_engine(TEST_DATABASE_URL)
     Base.metadata.create_all(bind=engine)
     yield
@@ -43,39 +64,6 @@ def override_get_session(db_session):
     app.dependency_overrides[getSession] = _override
     yield
     app.dependency_overrides.pop(getSession, None)
-
-@pytest.fixture
-def mysql_db():
-    session = MySQLSessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-@pytest.fixture
-def setup_product(mysql_db):
-    test_user = mysql_db.query(User).filter(User.id == 1).first()
-    if not test_user:
-        test_user = User(
-            id=1, 
-            username="jake_test",     
-            email="test@example.com", 
-            password_hash="fake_hash_for_test" 
-        )
-        mysql_db.add(test_user)
-        mysql_db.commit()
-
-    test_prod = Product(name="MacBook M3", user_id=1)
-    mysql_db.add(test_prod)
-    mysql_db.commit()
-
-    yield test_prod
-    mysql_db.rollback()
-
-    latest_prod = mysql_db.get(Product, test_prod.id)
-    if latest_prod:
-        mysql_db.delete(latest_prod)
-        mysql_db.commit()
 
 @pytest.fixture
 async def fake_redis():

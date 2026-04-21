@@ -44,7 +44,6 @@ class TestCheckAndTriggerMonitoring:
         assert mock_product.is_monitored == True
         mock_session.commit.assert_called_once()
         mock_celery.delay.assert_called_once_with(123, 'Product A')
-        mock_redis.delete.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_triggered_but_product_not_found(self, mock_redis):

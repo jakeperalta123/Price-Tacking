@@ -1,15 +1,16 @@
 services:
   db:
-    image: mysql:8.0
-    container_name: mysql_price_tracker
+    image: postgres:15
+    container_name: postgres_price_tracker
     restart: always
     environment:
-      MYSQL_DATABASE: price_tracker
-      MYSQL_ROOT_PASSWORD: test123
+      POSTGRES_DB: price_track
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: iamrich56987
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
-  mysql_data:
+  postgres_data:

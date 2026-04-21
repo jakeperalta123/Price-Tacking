@@ -1,8 +1,25 @@
 import pytest
 from httpx import AsyncClient
+from app.models.user import User
+from app.db import SessionLocal
 
 @pytest.mark.asyncio
 async def test_trigger_monitoring_sequence(async_client: AsyncClient, fake_redis):
+    # Ensure test user exists in DB
+    session = SessionLocal()
+    try:
+        test_user = session.get(User, 1)
+        if not test_user:
+            test_user = User(
+                id=1, 
+                username="jake_test",     
+                email="test@example.com", 
+                password_hash="fake_hash_for_test" 
+            )
+            session.add(test_user)
+            session.commit()
+    finally:
+        session.close()
 
     product_payload = {
         "name": "Switch OLED", 
