@@ -6,11 +6,23 @@ services:
     environment:
       POSTGRES_DB: price_track
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: iamrich56987
+      POSTGRES_PASSWORD: test123
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - price-tracker-network
 
+  backend:
+    build: .
+    container_name: price-tracker-backend
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:test123
 volumes:
   postgres_data:
