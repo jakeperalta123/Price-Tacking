@@ -1,8 +1,39 @@
 from datetime import datetime, timezone, date
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, text
 from decimal import Decimal
 from app.models.price import Price, PriceStatus
 from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import insert
+
+def create_price_entry(db: Session, product_id: int, price: Decimal, source: str):
+    stmt = insert(Price).values(
+        product_id=product_id,
+        price=price,
+        source=source,
+        currency="USD",
+        is_correction=False,
+        status="active",
+        created_at=datetime.now(),
+        last_update=datetime.now()
+    )
+
+    stmt = stmt.on_conflict_do_nothing(
+        index_elements=[
+            'product_id',
+            'price',
+            'source',
+            text("date_trunc('hour', created_at AT TIME ZONE 'UTC')")
+        ]
+    )
+
+    try:
+        result = db.execute(stmt)
+        db.commit()
+        return result
+    except Exception as e:
+        db.rollback()
+        print(f"Database error: {e}")
+        raise e
 
 def get_today_active_price(product_id: int, start: datetime, end: datetime,  session: Session):
     return session.execute(
