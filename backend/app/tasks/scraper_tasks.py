@@ -5,7 +5,8 @@ from app.core.celery_app import celery_app
 from app.models import Product, Price
 from app.core.config import settings
 from app.db import SessionLocal
-
+from app.crud.price_crud import create_price_entry
+from app.services.scraper import extract_price
 
 @celery_app.task(name="scrape_walmart_by_search")
 def scrape_walmart_by_name(product_id: int, product_name: str):
@@ -21,23 +22,25 @@ def scrape_walmart_by_name(product_id: int, product_name: str):
         response = requests.get(proxy_url, timeout=settings.SCRAPE_TIMEOUT)
         with open("debug_walmart.html", "w", encoding="utf-8") as f:
             f.write(response.text)
-        print(f"DEBUG: Status Code: {response.status_code}")
-        soup = BeautifulSoup(response.text, 'html.parser')
+        if response.status_code != 200:
+            return f"scraping failed: HTTP{response.status_code}"
+        
+        price = extract_price(response.text)
 
-        price_element = soup.select_one('div[data-automation-id="product-price"]')
-
-        if price_element:
-            raw_price = price_element.get_text().replace('$', '').replace(',', '')
-            db = SessionLocal()
-            new_price = Price(product_id=product_id, price=float(raw_price), source=settings.SOURCE_NAME_WALMART)
-            db.add(new_price)
-            db.commit()
-            db.close()
-            return f"成功爬取{product_name}: {raw_price}"
-        return f"找不到{product_name}的價格"
-    
+        if price is not None:
+            with SessionLocal() as db:
+                create_price_entry(
+                    db=db, 
+                    product_id=product_id,
+                    price=price,
+                    source=settings.SOURCE_NAME_WALMART
+                )
+            return f"成功爬取 {product_name}: {price}"
+        
+        return f"找不到 {product_name} 的價格欄位"
     except Exception as e:
-        return f"爬取失敗: {str(e)}"
+        return f"task failed: {str(e)}"
+
 
 @celery_app.task(name="daily_noon_check")
 def daily_noon_check():
